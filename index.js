@@ -1,57 +1,67 @@
 import express from "express";
-import bodyParser from "body-parser";
-import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import { exec } from "child_process";
 
 const app = express();
-app.use(bodyParser.json({ limit: "200mb" }));
 
-// Point fluent-ffmpeg to internal ffmpeg binary
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// allow large base64 uploads
+app.use(express.json({ limit: "50mb" }));
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+app.get("/", (_req, res) => {
+  res.status(200).send("✅ FFmpeg Video API is running (base64 mode)");
+});
 
 app.post("/api/merge", async (req, res) => {
   try {
-    const { audio, image, filename } = req.body;
-    if (!audio || !image)
-      return res.status(400).json({ error: "Missing audio or image input" });
+    const { audio, image, filename } = req.body || {};
+    if (!audio || !image) {
+      return res.status(400).json({ error: "Missing audio or image base64" });
+    }
 
-    const audioPath = __dirname + "/temp_audio.mp3";
-    const imagePath = __dirname + "/temp_image.png";
-    const outputPath = __dirname + "/" + (filename || "output.mp4");
+    const audioPath = "temp_audio.mp3";
+    const imagePath = "temp_image.png";
+    const outName = (filename || "output.mp4").replace(/[^\w.\- ]/g, "_");
 
+    // write files from base64 → binary
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
     fs.writeFileSync(imagePath, Buffer.from(image, "base64"));
 
-    ffmpeg()
-      .input(imagePath)
-      .loop(10) // 10 seconds or until audio ends
-      .input(audioPath)
-      .audioCodec("aac")
-      .videoCodec("libx264")
-      .outputOptions(["-shortest", "-pix_fmt yuv420p"])
-      .save(outputPath)
-      .on("end", () => {
-        const videoBase64 = fs.readFileSync(outputPath).toString("base64");
-        res.json({ videoBase64 });
-        [audioPath, imagePath, outputPath].forEach(f => fs.unlinkSync(f));
-      })
-      .on("error", err => {
-        console.error("FFmpeg error:", err);
-        res.status(500).json({ error: err.message });
-      });
-  } catch (err) {
-    console.error("Merge error:", err);
-    res.status(500).json({ error: err.message });
+    // run ffmpeg (merge still image + audio)
+    const cmd = [
+      `ffmpeg -y`,
+      `-loop 1 -framerate 2 -i ${imagePath}`,
+      `-i ${audioPath}`,
+      `-c:v libx264 -tune stillimage -pix_fmt yuv420p`,
+      `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"`,
+      `-c:a aac -b:a 192k`,
+      `-shortest`,
+      outName
+    ].join(" ");
+
+    exec(cmd, { timeout: 300000 }, (err, _stdout, stderr) => {
+      if (err) {
+        console.error("ffmpeg error:", stderr || err.message);
+        return res.status(500).json({ error: "ffmpeg failed to merge audio & image" });
+      }
+
+      try {
+        const videoBuffer = fs.readFileSync(outName);
+        const b64 = videoBuffer.toString("base64");
+        // cleanup
+        fs.unlinkSync(audioPath);
+        fs.unlinkSync(imagePath);
+        fs.unlinkSync(outName);
+        res.status(200).json({ videoBase64: b64 });
+      } catch (readErr) {
+        console.error("read error:", readErr.message);
+        res.status(500).json({ error: "failed to read output" });
+      }
+    });
+  } catch (e) {
+    console.error("server error:", e.message);
+    res.status(500).json({ error: "internal server error" });
   }
 });
 
-app.get("/", (req, res) => res.send("✅ FinanceTubeAI FFmpeg API running!"));
-
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log("🎥 Server running on port", PORT));
