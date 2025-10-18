@@ -1,67 +1,45 @@
 import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
 import fs from "fs";
-import { exec } from "child_process";
+import { execSync } from "child_process";
 
 const app = express();
+app.use(cors());
+app.use(bodyParser.json({ limit: "100mb" }));
 
-// allow large base64 uploads
-app.use(express.json({ limit: "50mb" }));
-
-app.get("/", (_req, res) => {
-  res.status(200).send("✅ FFmpeg Video API is running (base64 mode)");
+// Health check
+app.get("/", (req, res) => {
+  res.send("✅ FFmpeg Video API is live. Use POST /api/merge");
 });
 
+// Main merge endpoint
 app.post("/api/merge", async (req, res) => {
   try {
-    const { audio, image, filename } = req.body || {};
-    if (!audio || !image) {
-      return res.status(400).json({ error: "Missing audio or image base64" });
-    }
+    const { audio, image, filename } = req.body;
+    if (!audio || !image)
+      return res.status(400).json({ error: "Missing audio or image data" });
 
-    const audioPath = "temp_audio.mp3";
-    const imagePath = "temp_image.png";
-    const outName = (filename || "output.mp4").replace(/[^\w.\- ]/g, "_");
+    const audioPath = "/tmp/temp_audio.mp3";
+    const imagePath = "/tmp/temp_image.jpg";
+    const videoPath = `/tmp/${filename || "output"}.mp4`;
 
-    // write files from base64 → binary
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
     fs.writeFileSync(imagePath, Buffer.from(image, "base64"));
 
-    // run ffmpeg (merge still image + audio)
-    const cmd = [
-      `ffmpeg -y`,
-      `-loop 1 -framerate 2 -i ${imagePath}`,
-      `-i ${audioPath}`,
-      `-c:v libx264 -tune stillimage -pix_fmt yuv420p`,
-      `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"`,
-      `-c:a aac -b:a 192k`,
-      `-shortest`,
-      outName
-    ].join(" ");
+    execSync(
+      `ffmpeg -loop 1 -i ${imagePath} -i ${audioPath} -c:v libx264 -c:a aac -b:a 192k -shortest -pix_fmt yuv420p -y ${videoPath}`
+    );
 
-    exec(cmd, { timeout: 300000 }, (err, _stdout, stderr) => {
-      if (err) {
-        console.error("ffmpeg error:", stderr || err.message);
-        return res.status(500).json({ error: "ffmpeg failed to merge audio & image" });
-      }
-
-      try {
-        const videoBuffer = fs.readFileSync(outName);
-        const b64 = videoBuffer.toString("base64");
-        // cleanup
-        fs.unlinkSync(audioPath);
-        fs.unlinkSync(imagePath);
-        fs.unlinkSync(outName);
-        res.status(200).json({ videoBase64: b64 });
-      } catch (readErr) {
-        console.error("read error:", readErr.message);
-        res.status(500).json({ error: "failed to read output" });
-      }
-    });
-  } catch (e) {
-    console.error("server error:", e.message);
-    res.status(500).json({ error: "internal server error" });
+    const videoBuffer = fs.readFileSync(videoPath);
+    res.status(200).json({ videoBase64: videoBuffer.toString("base64") });
+  } catch (err) {
+    console.error("❌ FFmpeg merge error:", err.message);
+    res.status(500).json({ error: `ffmpeg exited: ${err.message}` });
   }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("🎥 Server running on port", PORT));
+app.listen(PORT, () => {
+  console.log(`🎬 FFmpeg Video API running on port ${PORT}`);
+});
