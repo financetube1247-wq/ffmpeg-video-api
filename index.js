@@ -4,9 +4,13 @@ import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 
 const app = express();
 app.use(bodyParser.json({ limit: "200mb" }));
+
+// Point fluent-ffmpeg to internal ffmpeg binary
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,10 +18,11 @@ const __dirname = dirname(__filename);
 app.post("/api/merge", async (req, res) => {
   try {
     const { audio, image, filename } = req.body;
-    if (!audio || !image) return res.status(400).json({ error: "Missing inputs" });
+    if (!audio || !image)
+      return res.status(400).json({ error: "Missing audio or image input" });
 
-    const audioPath = __dirname + "/audio.mp3";
-    const imagePath = __dirname + "/image.png";
+    const audioPath = __dirname + "/temp_audio.mp3";
+    const imagePath = __dirname + "/temp_image.png";
     const outputPath = __dirname + "/" + (filename || "output.mp4");
 
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
@@ -25,20 +30,28 @@ app.post("/api/merge", async (req, res) => {
 
     ffmpeg()
       .input(imagePath)
-      .loop(5)
+      .loop(10) // 10 seconds or until audio ends
       .input(audioPath)
-      .outputOptions("-c:v libx264", "-tune stillimage", "-c:a aac", "-b:a 192k", "-shortest")
+      .audioCodec("aac")
+      .videoCodec("libx264")
+      .outputOptions(["-shortest", "-pix_fmt yuv420p"])
       .save(outputPath)
       .on("end", () => {
         const videoBase64 = fs.readFileSync(outputPath).toString("base64");
         res.json({ videoBase64 });
         [audioPath, imagePath, outputPath].forEach(f => fs.unlinkSync(f));
       })
-      .on("error", err => res.status(500).json({ error: err.message }));
+      .on("error", err => {
+        console.error("FFmpeg error:", err);
+        res.status(500).json({ error: err.message });
+      });
   } catch (err) {
+    console.error("Merge error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/", (req, res) => res.send("✅ FFmpeg API running!"));
-app.listen(10000, () => console.log("Server running on port 10000"));
+app.get("/", (req, res) => res.send("✅ FinanceTubeAI FFmpeg API running!"));
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
