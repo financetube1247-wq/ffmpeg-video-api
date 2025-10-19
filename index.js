@@ -5,7 +5,7 @@ import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { v4 as uuidv4 } from "uuid";
-import ffmpegPath from "@ffmpeg-installer/ffmpeg";
+import ffmpegPath from "ffmpeg-static"; // Use ffmpeg-static for reliability
 
 const app = express();
 app.use(cors());
@@ -53,7 +53,7 @@ app.post("/api/merge", async (req, res) => {
 
     console.log("🎬 Running FFmpeg with:", ffmpegArgs.join(" "));
 
-    const ffmpeg = spawn(ffmpegPath.path, ffmpegArgs);
+    const ffmpeg = spawn(ffmpegPath, ffmpegArgs); // Use ffmpeg-static path
     let stderrData = "";
 
     ffmpeg.stderr.on("data", d => (stderrData += d.toString()));
