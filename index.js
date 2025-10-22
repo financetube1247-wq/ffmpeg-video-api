@@ -1,43 +1,110 @@
-23:55:15	Notice	Execution started
-23:55:16	Info	➡️ Row 2 | Stage: Error: Render API failed: {"error":"Option ignore_length not found.\n"}
-23:55:16	Info	➡️ Row 2 | Stage: Meta Ready
-23:55:16	Info	➡️ Row 2 | Stage: Thumbnail Ready
-23:55:17	Info	➡️ Row 2 | Stage: Voice Ready
-23:56:05	Info	Logging output too large. Truncating output. 🎬 Render API (502): <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>502</title>
-    <style>@font-face {
-  font-family: "Roobert";
-  font-weight: 500;
-  font-style: normal;
-  font-stretch: normal;
-  src: url("data:font/woff2;base64,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
-23:56:05	Info	Logging output too large. Truncating output. ⤴️ Retry 1/3 for render: Render API failed: <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>502</title>
-    <style>@font-face {
-  font-family: "Roobert";
-  font-weight: 500;
-  font-style: normal;
-  font-stretch: normal;
-  src: url("data:font/woff2;base64,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
-23:59:14	Info	🎬 Render API (500): {"error":"Guessed Channel Layout for Input Stream #1.0 : stereo\n"}
-23:59:14	Info	⤴️ Retry 2/3 for render: Render API failed: {"error":"Guessed Channel Layout for Input Stream #1.0 : stereo\n"}
-00:00:03	Info	🎬 Render API (502): 
-00:00:03	Info	⤴️ Retry 3/3 for render: Render API failed: 
-00:00:06	Info	➡️ Row 2 | Stage: Error: Render API failed: 
-00:00:06	Info	❌ Error row 2: Error: Render API failed: 
-    at callRender_ (Code:253:27)
-    at Code:360:36
-    at withRetry_ (Code:48:18)
-    at ensureVideo_ (Code:360:21)
-    at processRow_ (Code:395:21)
-    at runFullAutomation (Code:428:11)
-    at __GS_INTERNAL_top_function_call__.gs:1:8
-00:00:07	Notice	Execution completed
+/********************************************************************
+ FinanceTubeAI — FFmpeg Video API v2.3_FreeTierOptimized
+ Author: Ramanananda V | Maintainer: FinanceTubeAI
+ Purpose:
+ - Lightweight, stable API for converting image + audio → MP4
+ - Designed for free Render tier (under 1 MB inputs)
+ - Handles automatic cleanup & health checks
+*********************************************************************/
+
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { exec } from "child_process";
+import { fileURLToPath } from "url";
+import cors from "cors";
+import { v4 as uuidv4 } from "uuid";
+
+/* ---------------- SETUP ---------------- */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "80mb" }));
+
+const TMP_DIR = path.join(__dirname, "tmp");
+if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+
+/* ---------------- HEALTH CHECK ---------------- */
+app.get("/", (req, res) => {
+  res.status(200).send("✅ FFmpeg Video API v2.3_FreeTierOptimized is live and healthy!");
+});
+
+/* ---------------- UTILITY ---------------- */
+function runCommand(cmd, timeout = 240000) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(stderr || stdout || err.message));
+      resolve(stdout || stderr);
+    });
+  });
+}
+
+/* ---------------- MERGE ROUTE ---------------- */
+app.post("/api/merge", async (req, res) => {
+  try {
+    console.log("📩 Received /api/merge request");
+
+    const { audio, image } = req.body;
+    if (!audio || !image) return res.status(400).json({ error: "Missing audio or image base64" });
+
+    const id = uuidv4();
+    const imgBuf = Buffer.from(image, "base64");
+    const ext = imgBuf[0] === 0x89 && imgBuf[1] === 0x50 ? ".png" : ".jpg";
+
+    const imagePath = path.join(TMP_DIR, `${id}${ext}`);
+    const audioPath = path.join(TMP_DIR, `${id}.mp3`);
+    const wavPath = path.join(TMP_DIR, `${id}.wav`);
+    const outputPath = path.join(TMP_DIR, `${id}-output.mp4`);
+
+    fs.writeFileSync(imagePath, imgBuf);
+    fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
+    console.log(`✅ Temp files written: ${path.basename(imagePath)}, ${path.basename(audioPath)}`);
+
+    /* ---- STEP 1: Convert MP3 → WAV ---- */
+    const convertCmd = `ffmpeg -y -hide_banner -loglevel error -i "${audioPath}" -ar 44100 -ac 2 "${wavPath}"`;
+    console.log("🎧 Converting MP3 to WAV...");
+    await runCommand(convertCmd, 60000);
+
+    /* ---- STEP 2: Compose final video ---- */
+    // Adjusted for vertical 1080x1920, free-tier stable
+    const renderCmd = `ffmpeg -y -hide_banner -loglevel error -loop 1 -i "${imagePath}" -i "${wavPath}" \
+-vf "scale=1080:-2:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" \
+-c:v libx264 -preset veryfast -tune stillimage -c:a aac -b:a 128k \
+-shortest -movflags +faststart "${outputPath}"`;
+
+    console.log("🎬 Running FFmpeg render...");
+    await runCommand(renderCmd, 180000);
+
+    if (!fs.existsSync(outputPath)) throw new Error("FFmpeg output not created.");
+    console.log("✅ Render complete.");
+
+    const host = process.env.RENDER_EXTERNAL_HOSTNAME || req.get("host");
+    const fileUrl = `https://${host}/${path.basename(outputPath)}`;
+
+    res.json({ video_url: fileUrl });
+
+    /* ---- STEP 3: Cleanup after 45 s ---- */
+    setTimeout(() => {
+      try {
+        [imagePath, audioPath, wavPath, outputPath].forEach(f => fs.existsSync(f) && fs.unlinkSync(f));
+        console.log("🧹 Cleaned temp files for", id);
+      } catch (e) {
+        console.error("Cleanup error:", e.message);
+      }
+    }, 45000);
+
+  } catch (err) {
+    console.error("💥 Merge error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------------- STATIC SERVE ---------------- */
+app.use(express.static(TMP_DIR));
+
+/* ---------------- SERVER START ---------------- */
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`✅ FFmpeg Video API v2.3_FreeTierOptimized running on port ${PORT}`);
+});
