@@ -1,20 +1,14 @@
 {
-  "name": "ffmpeg-video-api",
-  "version": "2.3.0",
-  "description": "FinanceTubeAI FFmpeg API — lightweight video composer for Render free tier",
-  "main": "index.js",
+  "name": "financetube-render-api",
+  "version": "2.5.0",
   "type": "module",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "main": "index.js",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "uuid": "^9.0.1"
   },
-  "engines": {
-    "node": ">=18.x"
-  },
-  "author": "Ramanananda V (FinanceTubeAI)",
-  "license": "MIT"
+  "scripts": {
+    "start": "node index.js"
+  }
 }
