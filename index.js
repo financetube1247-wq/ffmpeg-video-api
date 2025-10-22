@@ -1,115 +1,71 @@
-// ============================================================================
-// Fiducia Fintech / FinanceTubeAI FFmpeg Video Merge API (Stable v3.0)
-// ============================================================================
-// Features:
-//  • Accepts either base64 or direct URLs for image/audio
-//  • Automatically detects audio duration (uses ffprobe fallback 60s)
-//  • Generates short MP4 videos for YouTube Shorts automation
-//  • Returns a downloadable public URL
-//  • Safe temp cleanup, detailed logs for debugging
-// ============================================================================
-
 import express from "express";
-import cors from "cors";
 import fs from "fs";
-import fetch from "node-fetch";
-import { spawn, execSync } from "child_process";
 import path from "path";
+import { exec } from "child_process";
+import { fileURLToPath } from "url";
+import cors from "cors";
+import { v4 as uuidv4 } from "uuid";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = express();
-const PORT = process.env.PORT || 10000;
-const TMP_DIR = "/opt/render/project/src/tmp";
-
 app.use(cors());
-app.use(express.json({ limit: "100mb" }));
-app.use(express.static(TMP_DIR));
+app.use(express.json({ limit: "50mb" }));
 
-app.get("/", (req, res) => res.send("✅ FFmpeg Video API running."));
+const TMP_DIR = path.join(__dirname, "tmp");
+if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+
+app.get("/", (req, res) => {
+  res.status(200).send("✅ FFmpeg Video API running.");
+});
 
 app.post("/api/merge", async (req, res) => {
   try {
     console.log("📩 Received merge request");
-
-    const { topic, script, audio, image, audioUrl, imageUrl } = req.body;
-    if ((!audio && !audioUrl) || (!image && !imageUrl)) {
-      console.error("❌ Missing audio or image data");
-      return res.status(400).json({ error: "Missing audio or image base64/url" });
+    const { audio, image } = req.body;
+    if (!audio || !image) {
+      return res.status(400).json({ error: "Missing audio or image base64" });
     }
 
-    // Step 1 — create temporary file names
-    const uid = crypto.randomUUID();
-    const imgPath = path.join(TMP_DIR, `${uid}.jpg`);
-    const audPath = path.join(TMP_DIR, `${uid}.mp3`);
-    const outPath = path.join(TMP_DIR, `${uid}-output.mp4`);
+    // Ensure /tmp folder always exists
+    if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
-    // Step 2 — save files
-    if (image) {
-      fs.writeFileSync(imgPath, Buffer.from(image, "base64"));
-    } else if (imageUrl) {
-      const imgBuf = await fetch(imageUrl).then(r => r.arrayBuffer());
-      fs.writeFileSync(imgPath, Buffer.from(imgBuf));
-    }
+    const id = uuidv4();
+    const audioPath = path.join(TMP_DIR, `${id}.mp3`);
+    const imagePath = path.join(TMP_DIR, `${id}.jpg`);
+    const outputPath = path.join(TMP_DIR, `${id}-output.mp4`);
 
-    if (audio) {
-      fs.writeFileSync(audPath, Buffer.from(audio, "base64"));
-    } else if (audioUrl) {
-      const audBuf = await fetch(audioUrl).then(r => r.arrayBuffer());
-      fs.writeFileSync(audPath, Buffer.from(audBuf));
-    }
+    // Decode base64 and write files
+    fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
+    fs.writeFileSync(imagePath, Buffer.from(image, "base64"));
+    console.log("✅ Files written:", { audioPath, imagePath });
 
-    console.log("✅ Files saved locally");
+    // Build ffmpeg command
+    const cmd = `ffmpeg -loop 1 -i "${imagePath}" -i "${audioPath}" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -movflags faststart "${outputPath}"`;
 
-    // Step 3 — detect duration
-    let duration = 60;
-    try {
-      const probe = execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${audPath}"`).toString().trim();
-      duration = Math.ceil(parseFloat(probe)) || 60;
-    } catch (e) {
-      console.log("⚠️ ffprobe failed, using fallback duration 60s");
-    }
-
-    console.log(`🎬 Detected duration: ${duration}s`);
-
-    // Step 4 — run FFmpeg
-    const ffmpegArgs = [
-      "-loop", "1",
-      "-i", imgPath,
-      "-i", audPath,
-      "-t", duration.toString(),
-      "-c:v", "libx264",
-      "-tune", "stillimage",
-      "-c:a", "aac",
-      "-b:a", "192k",
-      "-pix_fmt", "yuv420p",
-      "-shortest",
-      "-movflags", "faststart",
-      outPath
-    ];
-
-    console.log("🎥 Running FFmpeg with:", ffmpegArgs.join(" "));
-
-    const ffmpeg = spawn("ffmpeg", ffmpegArgs);
-
-    ffmpeg.stderr.on("data", d => process.stdout.write(d.toString()));
-
-    ffmpeg.on("close", (code) => {
-      console.log(`✅ FFmpeg finished with code ${code}`);
-      if (fs.existsSync(outPath)) {
-        const videoUrl = `${req.protocol}://${req.get("host")}/${path.basename(outPath)}`;
-        console.log("✅ Returning video:", videoUrl);
-        return res.json({ video_url: videoUrl });
-      } else {
-        return res.status(500).json({ error: "Output file missing after FFmpeg." });
-      }
+    console.log("🎬 Running FFmpeg with:", cmd);
+    await new Promise((resolve, reject) => {
+      exec(cmd, { timeout: 120000 }, (err, stdout, stderr) => {
+        if (err) return reject(err);
+        console.log(stdout || stderr);
+        resolve();
+      });
     });
 
-    // Timeout safety — if ffmpeg stalls
+    if (!fs.existsSync(outputPath)) throw new Error("Output video not created.");
+
+    console.log("✅ FFmpeg completed:", outputPath);
+    const fileUrl = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || "ffmpeg-video-api-ekkc.onrender.com"}/${path.basename(outputPath)}`;
+
+    res.json({ video_url: fileUrl });
+
+    // Optional cleanup (after 30s)
     setTimeout(() => {
-      if (!res.headersSent) {
-        console.error("⏰ Timeout — FFmpeg took too long");
-        res.status(504).json({ error: "Timeout during rendering" });
-      }
-    }, (duration + 30) * 1000);
+      try {
+        [audioPath, imagePath, outputPath].forEach(f => fs.existsSync(f) && fs.unlinkSync(f));
+        console.log("🧹 Cleaned temp files for:", id);
+      } catch (e) { console.error("Cleanup error:", e.message); }
+    }, 30000);
 
   } catch (err) {
     console.error("💥 Merge error:", err);
@@ -117,6 +73,10 @@ app.post("/api/merge", async (req, res) => {
   }
 });
 
+// Static serve for completed videos
+app.use(express.static(TMP_DIR));
+
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ FFmpeg Video API running on port ${PORT}`);
 });
