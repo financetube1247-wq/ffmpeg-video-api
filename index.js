@@ -46,9 +46,9 @@ app.post("/api/merge", async (req, res) => {
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
     console.log(`✅ Files written: ${imagePath}, ${audioPath}`);
 
-    // ✅ FIXED: create vertical Shorts video with blurred background (no cropping error)
+    // ✅ FIXED: use padding instead of cropping for any image size
     const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" \
-      -filter_complex "[0:v]scale=1080:-1,boxblur=40:40,crop=1080:1920[bg];[0:v]scale=-1:1080[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" \
+      -filter_complex "[0:v]scale=1080:-1[fg];[fg]boxblur=40:40[bg];[bg][fg]overlay=(W-w)/2:(H-h)/2,scale=1080:-1,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" \
       -c:v libx264 -preset ultrafast -tune stillimage -c:a aac -b:a 128k \
       -pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
 
