@@ -1,7 +1,7 @@
 {
   "name": "ffmpeg-video-api",
-  "version": "2.0.1",
-  "description": "FinanceTubeAI Render FFmpeg Video API",
+  "version": "2.1.0",
+  "description": "FinanceTubeAI FFmpeg API for Shorts rendering",
   "main": "index.js",
   "type": "module",
   "scripts": {
