@@ -1,9 +1,9 @@
 {
   "name": "ffmpeg-video-api",
-  "version": "2.1.0",
-  "description": "FinanceTubeAI FFmpeg Video Merge API — Stable AudioCrashFix Edition",
-  "type": "module",
+  "version": "2.3.0",
+  "description": "FinanceTubeAI FFmpeg API — lightweight video composer for Render free tier",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
@@ -15,14 +15,6 @@
   "engines": {
     "node": ">=18.x"
   },
-  "keywords": [
-    "ffmpeg",
-    "video",
-    "merge",
-    "api",
-    "render",
-    "automation",
-    "financetubeai"
-  ],
+  "author": "Ramanananda V (FinanceTubeAI)",
   "license": "MIT"
 }
