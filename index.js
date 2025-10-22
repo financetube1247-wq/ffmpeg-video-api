@@ -46,9 +46,9 @@ app.post("/api/merge", async (req, res) => {
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
     console.log(`✅ Files written: ${imagePath}, ${audioPath}`);
 
-    // Core FFmpeg command for YouTube Shorts (vertical format)
+    // ✅ FIXED: create vertical Shorts video with blurred background (no cropping error)
     const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" \
-      -vf "scale=1080:1080:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p" \
+      -filter_complex "[0:v]scale=1080:-1,boxblur=40:40,crop=1080:1920[bg];[0:v]scale=-1:1080[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" \
       -c:v libx264 -preset ultrafast -tune stillimage -c:a aac -b:a 128k \
       -pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
 
@@ -74,7 +74,9 @@ app.post("/api/merge", async (req, res) => {
       try {
         [imagePath, audioPath, outputPath].forEach(f => fs.existsSync(f) && fs.unlinkSync(f));
         console.log("🧹 Cleaned temp files for", id);
-      } catch (e) { console.error("Cleanup error:", e.message); }
+      } catch (e) {
+        console.error("Cleanup error:", e.message);
+      }
     }, 45000);
 
   } catch (err) {
