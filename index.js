@@ -30,10 +30,7 @@ app.post("/api/merge", async (req, res) => {
       return res.status(400).json({ error: "Missing audio or image base64" });
     }
 
-    if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
     const id = uuidv4();
-
-    // Detect image type from signature
     const imgBuf = Buffer.from(image, "base64");
     let ext = ".jpg";
     if (imgBuf[0] === 0x89 && imgBuf[1] === 0x50) ext = ".png"; // PNG signature
@@ -46,11 +43,13 @@ app.post("/api/merge", async (req, res) => {
     fs.writeFileSync(audioPath, Buffer.from(audio, "base64"));
     console.log(`✅ Files written: ${imagePath}, ${audioPath}`);
 
-    // ✅ FIXED: use padding instead of cropping for any image size
+    // ✅ CLEAN & STABLE FFmpeg filter chain (no invalid specifiers)
     const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" \
-      -filter_complex "[0:v]scale=1080:-1[fg];[fg]boxblur=40:40[bg];[bg][fg]overlay=(W-w)/2:(H-h)/2,scale=1080:-1,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p" \
-      -c:v libx264 -preset ultrafast -tune stillimage -c:a aac -b:a 128k \
-      -pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
+      -filter_complex "[0:v]scale=1080:-1,boxblur=40:40,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg]; \
+                       [0:v]scale=-1:1080[fg]; \
+                       [bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p" \
+      -c:v libx264 -preset ultrafast -tune stillimage \
+      -c:a aac -b:a 128k -pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
 
     console.log("🎬 Running FFmpeg:", cmd);
     await new Promise((resolve, reject) => {
