@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 
+// ---------- SETUP ----------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -17,24 +18,25 @@ if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
 // ---------- HEALTH CHECK ----------
 app.get("/", (req, res) => {
-  res.status(200).send("✅ FFmpeg Video API v2.1_Fix_AudioCrash is live!");
+  res.status(200).send("✅ FFmpeg Video API v2.2_Stable_Render_Fix is live and healthy!");
 });
 
-// ---------- UTILITY ----------
+// ---------- HELPER: Run Command ----------
 function runCommand(cmd, timeout = 240000) {
   return new Promise((resolve, reject) => {
-    const process = exec(cmd, { timeout }, (err, stdout, stderr) => {
+    exec(cmd, { timeout }, (err, stdout, stderr) => {
       if (err) return reject(new Error(stderr || stdout || err.message));
       resolve(stdout || stderr);
     });
   });
 }
 
-// ---------- MERGE ROUTE ----------
+// ---------- MAIN /api/merge ----------
 app.post("/api/merge", async (req, res) => {
   try {
     console.log("📩 Received /api/merge request");
     const { audio, image } = req.body;
+
     if (!audio || !image) {
       return res.status(400).json({ error: "Missing audio or image base64" });
     }
@@ -42,7 +44,7 @@ app.post("/api/merge", async (req, res) => {
     if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
     const id = uuidv4();
 
-    // Detect image extension
+    // detect image extension
     const imgBuf = Buffer.from(image, "base64");
     const ext = imgBuf[0] === 0x89 && imgBuf[1] === 0x50 ? ".png" : ".jpg";
 
@@ -57,36 +59,40 @@ app.post("/api/merge", async (req, res) => {
 
     // ---------- Convert MP3 → WAV ----------
     const convertCmd = `ffmpeg -y -hide_banner -loglevel warning -i "${audioPath}" -ar 44100 -ac 2 "${wavPath}"`;
-    console.log("🎧 Converting MP3 to WAV:", convertCmd);
+    console.log("🎧 Converting MP3 to WAV...");
     await runCommand(convertCmd, 60000);
 
-    // ---------- Main Render Command ----------
-    const renderCmd = `ffmpeg -y -hide_banner -loglevel warning \
--ignore_length true -loop 1 -i "${imagePath}" -i "${wavPath}" \
+    // ---------- Render Video ----------
+    const renderCmd = `ffmpeg -y -hide_banner -loglevel warning -analyzeduration 100M -probesize 100M \
+-fflags +igndts -loop 1 -i "${imagePath}" -i "${wavPath}" \
 -vf "scale=1080:1920:force_original_aspect_ratio=decrease,format=yuv420p" \
--c:v libx264 -preset superfast -tune stillimage -c:a aac -b:a 128k \
--pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
+-c:v libx264 -preset superfast -tune stillimage \
+-c:a aac -b:a 128k -pix_fmt yuv420p -shortest -movflags +faststart "${outputPath}"`;
 
-    console.log("🎬 Running FFmpeg:", renderCmd);
+    console.log("🎬 Running FFmpeg command...");
     await runCommand(renderCmd, 180000);
 
-    if (!fs.existsSync(outputPath)) throw new Error("FFmpeg output not created.");
+    if (!fs.existsSync(outputPath)) throw new Error("FFmpeg output not created");
 
     console.log("✅ FFmpeg finished successfully");
+
     const host = process.env.RENDER_EXTERNAL_HOSTNAME || req.get("host");
     const fileUrl = `https://${host}/${path.basename(outputPath)}`;
 
     res.json({ video_url: fileUrl });
 
-    // ---------- Cleanup ----------
+    // ---------- Cleanup after 45s ----------
     setTimeout(() => {
       try {
-        [imagePath, audioPath, wavPath, outputPath].forEach(f => fs.existsSync(f) && fs.unlinkSync(f));
+        [imagePath, audioPath, wavPath, outputPath].forEach(f => {
+          if (fs.existsSync(f)) fs.unlinkSync(f);
+        });
         console.log("🧹 Cleaned temp files for", id);
       } catch (e) {
         console.error("Cleanup error:", e.message);
       }
     }, 45000);
+
   } catch (err) {
     console.error("💥 Merge error:", err.message);
     res.status(500).json({ error: err.message });
@@ -98,4 +104,6 @@ app.use(express.static(TMP_DIR));
 
 // ---------- SERVER START ----------
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ FFmpeg API running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ FFmpeg API running on port ${PORT}`);
+});
