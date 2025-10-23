@@ -1,0 +1,51 @@
+node_modules/
+temp/
+public/videos/
+*.log
+.env
+.DS_Store
+```
+
+**⚠️ Important:** Don't include the comment lines like `// FILE 3:` - just the actual folder/file names!
+
+5. **Scroll down to "Commit new file"**
+   - Message: `Add .gitignore`
+   - Click **"Commit new file"** (green button)
+
+---
+
+## ✅ **That's it!**
+
+Your repo will now have:
+```
+├── index.js         ✅ Updated
+├── package.json     ✅ Updated  
+└── .gitignore       ✅ Added
+```
+
+---
+
+## 🎯 **What Happens Next:**
+
+1. ✅ Git will ignore `node_modules/` folder (saves 100+ MB)
+2. ✅ Won't upload temporary files
+3. ✅ Won't upload rendered videos
+4. ✅ Keeps your repo clean and fast
+
+---
+
+## 🚀 **Ready to Deploy:**
+
+Once you've:
+- ✅ Updated `index.js`
+- ✅ Updated `package.json`
+- ✅ Added `.gitignore` (optional)
+
+**Render will automatically:**
+1. Detect the changes
+2. Start deploying (check the "Logs" tab)
+3. Show **"Live"** when ready (2-3 minutes)
+
+Then run your automation and watch for:
+```
+Video downloaded successfully: 8450 KB ✅
