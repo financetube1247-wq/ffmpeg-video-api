@@ -1,12 +1,12 @@
 {
   "name": "financetubeai-render-api",
-  "version": "3.1.0",
+  "version": "3.3.1",
   "description": "FinanceTubeAI FFmpeg render API — merges image + audio into YouTube-ready vertical MP4s (H.264 + AAC + faststart).",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon --ignore temp --ignore public index.js"
   },
   "keywords": [
     "ffmpeg",
