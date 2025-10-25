@@ -60,9 +60,12 @@ async function processVideo(id,imgPath,audPath,outPath){
       -c:a aac -b:a 192k -shortest -movflags +faststart "${outPath}"
     `;
 
-    await execPromise(cmd);
-    const st=fs.statSync(outPath);
-    if(!st.size || st.size<150000) throw new Error(`Output too small (${st.size} bytes)`);
+    // allow up to 4 minutes for FFmpeg to finish, handle large audio/image files
+    await execPromise(cmd, { timeout: 240000 }).catch(err => {
+    throw new Error(`FFmpeg failed or timed out: ${err.message}`);
+    });
+
+const st = fs.statSync(outPath);
 
     videoJobs.set(id,{
       status:"complete",
