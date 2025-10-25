@@ -1,23 +1,33 @@
 {
-  "name": "ffmpeg-video-api",
-  "version": "3.0.0",
-  "description": "FFmpeg video merging API for YouTube Shorts automation",
+  "name": "financetubeai-render-api",
+  "version": "3.1.0",
+  "description": "FinanceTubeAI FFmpeg render API — merges image + audio into YouTube-ready vertical MP4s (H.264 + AAC + faststart).",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js"
+    "dev": "nodemon index.js"
   },
-  "keywords": ["ffmpeg", "video", "api"],
-  "author": "FinanceTubeAI",
+  "keywords": [
+    "ffmpeg",
+    "video",
+    "render",
+    "api",
+    "youtube-shorts",
+    "automation",
+    "financetubeai"
+  ],
+  "author": "Ramanananda V (FinanceTubeAI)",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "cors": "^2.8.5",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   },
   "engines": {
     "node": ">=18.0.0"
   }
 }
-
