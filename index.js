@@ -1,6 +1,8 @@
 // =====================================================
-// FILE: index.js (FinanceTubeAI Render API v3.3.1-FINAL)
+// FILE: index.js (FinanceTubeAI Render API v3.3.2-ENHANCED)
 // PURPOSE: Merge image + audio into vertical YouTube Shorts-ready MP4
+// ENHANCEMENTS: Adds blurred background + overlay text caption
+// BASED ON: v3.3.1-FINAL (fully stable)
 // COMPATIBLE WITH: Apps Script v3.9.1 (FinanceTubeAI_ShortsAutomation)
 // =====================================================
 
@@ -51,7 +53,6 @@ function cleanupOldJobs() {
 
   if (cleaned > 0) console.log(`🧹 Cleaned ${cleaned} old jobs and videos`);
 
-  // Memory protection
   if (videoJobs.size > MAX_ACTIVE_JOBS) {
     const excess = videoJobs.size - MAX_ACTIVE_JOBS;
     const oldest = Array.from(videoJobs.entries())
@@ -65,7 +66,7 @@ setInterval(cleanupOldJobs, 900000); // every 15 min
 
 // ─────────────── Routes ───────────────
 app.get("/", (req, res) =>
-  res.json({ status: "online", version: "3.3.1", uptime: Math.floor(process.uptime()) })
+  res.json({ status: "online", version: "3.3.2-ENHANCED", uptime: Math.floor(process.uptime()) })
 );
 
 // Health check
@@ -74,7 +75,7 @@ app.get("/health", (req, res) => {
     const mem = process.memoryUsage();
     res.json({
       status: "healthy",
-      version: "3.3.1",
+      version: "3.3.2-ENHANCED",
       uptime: Math.floor(process.uptime()),
       memory: {
         rss: Math.round(mem.rss / 1024 / 1024) + "MB",
@@ -162,16 +163,31 @@ app.get("/api/status/:id", (req, res) => {
   res.json({ id: req.params.id, ...job, age: Math.floor((Date.now() - job.createdAt) / 1000) + "s" });
 });
 
-// ─────────────── Core Processing ───────────────
+// ─────────────── Core Processing (Enhanced Visuals) ───────────────
 async function processVideo(id, imgPath, audPath, outPath) {
   const started = Date.now();
   try {
     console.log(`🎬 Processing ${id}`);
+
+    // 💬 Caption text (can be made dynamic later)
+    const overlayText = "FinanceTubeAI Shorts";
+
+    // 🎥 Video filter chain (blur + centered overlay + caption box)
+    const vfFilter = `
+    [0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black[a];
+    [a]split=2[b][fg];
+    [b]scale=1080:1920,boxblur=20:20[bg];
+    [bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p,
+    drawbox=y=h-260:color=black@0.5:width=iw:height=120:t=max,
+    drawtext=text='${overlayText}':fontcolor=white:fontsize=48:
+    x=(w-text_w)/2:y=h-200:shadowcolor=black:shadowx=2:shadowy=2
+    `.trim().replace(/\n/g, "");
+
     const cmd = `
       ffmpeg -y -hide_banner -loglevel warning \
       -loop 1 -framerate 1 -i "${imgPath}" \
       -i "${audPath}" \
-      -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1:1,format=yuv420p" \
+      -vf "${vfFilter}" \
       -c:v libx264 -pix_fmt yuv420p -preset ultrafast -tune stillimage -crf 28 \
       -c:a aac -b:a 128k -ar 44100 \
       -shortest -movflags +faststart \
@@ -244,7 +260,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 10000;
 const HOST = "0.0.0.0";
 app.listen(PORT, HOST, () => {
-  console.log(`✅ FFmpeg Video API v3.3.1-FINAL running on ${HOST}:${PORT}`);
+  console.log(`✅ FFmpeg Video API v3.3.2-ENHANCED running on ${HOST}:${PORT}`);
   console.log(`📁 Temp directory: ${TMP_DIR}`);
   console.log(`📁 Video directory: ${VIDEO_DIR}`);
   console.log(`🔄 Cleanup interval: 15 minutes`);
