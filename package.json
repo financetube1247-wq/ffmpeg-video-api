@@ -1,7 +1,7 @@
 {
   "name": "financetubeai-render-api",
-  "version": "3.3.1",
-  "description": "FinanceTubeAI FFmpeg render API — merges image + audio into YouTube-ready vertical MP4s (H.264 + AAC + faststart).",
+  "version": "3.4.0",
+  "description": "FinanceTubeAI FFmpeg render API for YouTube Shorts automation",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -11,13 +11,10 @@
   "keywords": [
     "ffmpeg",
     "video",
-    "render",
-    "api",
     "youtube-shorts",
-    "automation",
-    "financetubeai"
+    "automation"
   ],
-  "author": "Ramanananda V (FinanceTubeAI)",
+  "author": "Ramanananda V",
   "license": "MIT",
   "dependencies": {
     "express": "^4.19.2",
